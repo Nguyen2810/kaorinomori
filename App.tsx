@@ -10,9 +10,11 @@ import { GeneratedImageDisplay } from './components/GeneratedImageDisplay';
 import { ImagePreviewModal } from './components/ImagePreviewModal';
 import { SparklesIcon } from './components/icons/SparklesIcon';
 import { SuggestIcon } from './components/icons/SuggestIcon';
+import { ZoomInIcon } from './components/icons/ZoomInIcon';
 import { fileToBase64 } from './utils/fileUtils';
 import { padImage } from './utils/canvasUtils';
 import { generateStudioImage, generatePromptSuggestion } from './services/geminiService';
+import { SceneTemplates } from './components/SceneTemplates';
 
 type GenerationMode = 'prompt' | 'scene' | 'edit';
 
@@ -39,6 +41,7 @@ function App() {
   
   // Output State
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [sessionHistory, setSessionHistory] = useState<string[]>([]);
   const [isEditingSource, setIsEditingSource] = useState<string | null>(null);
 
   // Modal State
@@ -119,12 +122,20 @@ function App() {
     try {
         const suggestion = await generatePromptSuggestion();
         setPrompt(suggestion);
-    } catch (err) {
-        setError("Could not generate a prompt suggestion.");
+    } catch (err: any) {
+        setError(err.message || "Could not generate a prompt suggestion.");
     } finally {
         setIsSuggesting(false);
     }
   };
+
+  const handleTemplateSelect = useCallback((templatePrompt: string) => {
+    setPrompt(templatePrompt);
+    // Selecting a template implies a text-based prompt, so clear any scene images.
+    if (sceneImages.length > 0) {
+      handleClearSceneImages();
+    }
+  }, [sceneImages.length, handleClearSceneImages]);
 
   // --- Modal Handlers ---
 
@@ -185,7 +196,7 @@ function App() {
         sceneImageMimeType = sceneImages[0].type;
       }
       
-      const results: string[] = [];
+      const newImagesForThisRun: string[] = [];
 
       for (let i = 0; i < imageCount; i++) {
         const result = await generateStudioImage(
@@ -201,18 +212,20 @@ function App() {
         );
 
         if (result.imageUrl) {
-          results.push(result.imageUrl);
+          newImagesForThisRun.push(result.imageUrl);
           setGeneratedImages(prev => [...prev, result.imageUrl!]);
         } else {
             throw new Error("The model did not return an image.");
         }
       }
+      
+      setSessionHistory(prev => [...newImagesForThisRun, ...prev]);
 
     } catch (err: any) {
       setError(err.message || 'An unknown error occurred during image generation.');
     } finally {
       setIsLoading(false);
-      if (primaryImageSrc && mode !== 'edit') {
+      if (primaryImageSrc && mode !== 'edit' && !isEditingSource) {
         URL.revokeObjectURL(primaryImageSrc);
       }
       if (mode === 'edit') {
@@ -226,7 +239,7 @@ function App() {
     setMode('edit');
     setIsEditingSource(imageUrl);
     setPrompt('');
-    setGeneratedImages([]);
+    // setGeneratedImages([]); // This was causing the history to disappear
     handleClearProductImages();
     handleClearSceneImages();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -301,39 +314,61 @@ function App() {
               />
             </div>
 
-            <div>
-              <label className="text-lg font-semibold text-gray-800 mb-2 block">{mode === 'edit' ? '2. Mô tả chỉnh sửa của bạn' : '2. Mô tả bối cảnh'}</label>
+            {/* Step 2: Scene Description (for Prompt/Scene mode) */}
+            <div style={{ display: mode !== 'edit' ? 'block' : 'none' }}>
+                <label className="text-lg font-semibold text-gray-800 mb-2 block">2. Mô tả bối cảnh</label>
+                <p className="text-sm text-gray-500 mb-3">Chọn một mẫu có sẵn, mô tả chi tiết cảnh bạn muốn, hoặc tải lên ảnh bối cảnh.</p>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+                    <div>
+                        <h3 className="text-md font-semibold text-gray-600 mb-3">Chọn một mẫu có sẵn</h3>
+                        <SceneTemplates onTemplateSelect={handleTemplateSelect} />
+                    </div>
+
+                    <p className="text-center text-sm text-gray-400 !my-2 font-semibold">HOẶC VIẾT MÔ TẢ CỦA BẠN</p>
+                    
+                    <div>
+                        <PromptInput 
+                            value={prompt}
+                            onChange={setPrompt}
+                            placeholder="ví dụ: Một ngọn nến thơm trên phiến đá cẩm thạch tối giản..."
+                        />
+                        <div className="mt-2 flex justify-end">
+                            <button 
+                                onClick={handleSuggestPrompt}
+                                disabled={isSuggesting}
+                                className="flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <SuggestIcon className="w-4 h-4" />
+                                {isSuggesting ? 'Đang tạo...' : 'Gợi ý cho tôi'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p className="text-center text-sm text-gray-400 my-2">HOẶC TẢI LÊN ẢNH BỐI CẢNH</p>
+                        <ImageUploader 
+                            previews={sceneImagePreviews}
+                            onImageChange={handleSceneImageChange}
+                            onRemoveImage={handleRemoveSceneImage}
+                            onClearAll={handleClearSceneImages}
+                            onPreviewClick={(index) => openModal(sceneImagePreviews, index)}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Step 2: Edit Description (for Edit mode) */}
+            <div style={{ display: mode === 'edit' ? 'block' : 'none' }}>
+              <label className="text-lg font-semibold text-gray-800 mb-2 block">2. Mô tả chỉnh sửa của bạn</label>
               <p className="text-sm text-gray-500 mb-3">
-                {mode === 'edit' ? 'Hãy cụ thể về những thay đổi bạn muốn xem.' : 'Mô tả chi tiết cảnh bạn muốn hoặc tải lên một hình ảnh để AI sử dụng làm bối cảnh.'}
+                Hãy cụ thể về những thay đổi bạn muốn xem.
               </p>
-              
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <PromptInput 
                   value={prompt}
                   onChange={setPrompt}
-                  placeholder={mode === 'edit' ? "ví dụ: làm cho nền tối hơn" : "ví dụ: Một ngọn nến thơm trên phiến đá cẩm thạch tối giản..."}
+                  placeholder="ví dụ: làm cho nền tối hơn"
                 />
-                <div className="mt-2 flex justify-end">
-                    <button 
-                        onClick={handleSuggestPrompt}
-                        disabled={isSuggesting || mode === 'edit'}
-                        className="flex items-center gap-2 text-sm font-semibold text-brand hover:text-brand/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <SuggestIcon className="w-4 h-4" />
-                        {isSuggesting ? 'Đang tạo...' : 'Gợi ý cho tôi'}
-                    </button>
-                </div>
-
-                <div className="mt-4" style={{ display: mode === 'edit' ? 'none' : 'block' }}>
-                  <p className="text-center text-sm text-gray-400 my-2">HOẶC TẢI LÊN ẢNH BỐI CẢNH</p>
-                  <ImageUploader 
-                    previews={sceneImagePreviews}
-                    onImageChange={handleSceneImageChange}
-                    onRemoveImage={handleRemoveSceneImage}
-                    onClearAll={handleClearSceneImages}
-                    onPreviewClick={(index) => openModal(sceneImagePreviews, index)}
-                  />
-                </div>
               </div>
             </div>
 
@@ -419,6 +454,29 @@ function App() {
             </div>
           </div>
         </div>
+        
+        {/* Session History */}
+        {sessionHistory.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">Lịch sử trong phiên</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+              {sessionHistory.map((img, index) => (
+                <div 
+                  key={`${img.slice(-10)}-${index}`}
+                  className="relative aspect-square group cursor-pointer bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300"
+                  onClick={() => openModal(sessionHistory, index)}
+                  role="button"
+                  aria-label={`View image ${index + 1} from history`}
+                >
+                  <img src={img} alt={`Generated history image ${index + 1}`} className="w-full h-full object-contain" />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity duration-300 flex items-center justify-center">
+                    <ZoomInIcon className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       {isModalOpen && (
