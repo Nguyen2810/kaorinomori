@@ -23,7 +23,7 @@ export const AspectRatioSelector: React.FC<AspectRatioSelectorProps> = ({ select
             onClick={() => onRatioChange(ratio.id)}
             className={`text-sm font-medium rounded-full py-2 px-4 transition-colors duration-200 ease-in-out
               ${selectedRatio === ratio.id
-                ? 'bg-indigo-600 text-white shadow'
+                ? 'bg-brand text-white shadow'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
           >

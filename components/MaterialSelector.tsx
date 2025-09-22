@@ -24,7 +24,7 @@ export const MaterialSelector: React.FC<MaterialSelectorProps> = ({ selectedMate
             onClick={() => onMaterialChange(material.id)}
             className={`text-sm font-medium rounded-full py-2 px-4 transition-colors duration-200 ease-in-out
               ${selectedMaterial === material.id
-                ? 'bg-indigo-600 text-white shadow'
+                ? 'bg-brand text-white shadow'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
           >

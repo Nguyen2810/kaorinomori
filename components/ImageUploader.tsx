@@ -36,7 +36,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageChange, pre
 
   return (
     <div 
-      className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors bg-gray-50"
+      className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-brand transition-colors bg-gray-50"
     >
       <div 
         className="absolute inset-0 cursor-pointer"
@@ -79,7 +79,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageChange, pre
                 ))}
             </div>
             <div className="flex justify-between items-center pt-2 relative z-10">
-                <p className="text-sm text-indigo-600 font-semibold">
+                <p className="text-sm text-brand font-semibold">
                     Nhấn để thêm hoặc thay thế ảnh.
                 </p>
                 <button
@@ -97,7 +97,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageChange, pre
         <div className="flex flex-col items-center justify-center space-y-2 text-gray-500 pointer-events-none">
           <UploadIcon className="w-12 h-12 text-gray-400" />
           <p className="font-semibold">
-            <span className="text-indigo-600">Nhấn để tải lên</span> hoặc kéo và thả
+            <span className="text-brand">Nhấn để tải lên</span> hoặc kéo và thả
           </p>
           <p className="text-xs">PNG, JPG, WEBP</p>
         </div>

@@ -23,7 +23,7 @@ export const CollectionOptionsSelector: React.FC<CollectionOptionsSelectorProps>
             onClick={() => onCountChange(option.id)}
             className={`py-2 text-sm font-semibold rounded-md transition-all duration-300 ${
               selectedCount === option.id
-                ? 'bg-white text-indigo-600 shadow'
+                ? 'bg-white text-brand shadow'
                 : 'bg-transparent text-gray-600 hover:bg-gray-300'
             }`}
           >

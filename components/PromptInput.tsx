@@ -13,7 +13,7 @@ export const PromptInput: React.FC<PromptInputProps> = ({ value, onChange, place
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder || "ví dụ: Một ngọn nến thơm trên phiến đá cẩm thạch tối giản với ánh sáng buổi sáng dịu nhẹ."}
       rows={4}
-      className="w-full p-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow resize-none placeholder:text-gray-500"
+      className="w-full p-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand/50 focus:border-brand transition-shadow resize-none placeholder:text-gray-500"
     />
   );
 };
