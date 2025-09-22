@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { PromptInput } from './components/PromptInput';
@@ -17,6 +18,8 @@ type GenerationMode = 'prompt' | 'scene' | 'edit';
 
 
 function App() {
+  const appRef = useRef<HTMLDivElement>(null);
+  
   // Input State
   const [productImages, setProductImages] = useState<File[]>([]);
   const [productImagePreviews, setProductImagePreviews] = useState<string[]>([]);
@@ -229,6 +232,29 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
+  // Effect to handle iframe resizing
+  useEffect(() => {
+    const appElement = appRef.current;
+    if (!appElement) return;
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const height = entry.contentRect.height;
+        window.parent.postMessage({
+          type: 'resize-iframe',
+          height: height,
+        }, '*');
+      }
+    });
+
+    resizeObserver.observe(appElement);
+
+    // Cleanup on unmount
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+  
   // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
@@ -240,7 +266,7 @@ function App() {
 
 
   return (
-    <div className="bg-gray-100 min-h-screen font-sans text-gray-800">
+    <div ref={appRef} className="bg-gray-100 font-sans text-gray-800">
       <Header />
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
